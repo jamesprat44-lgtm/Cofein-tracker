@@ -81,7 +81,7 @@ function drawChart(){
  const vals=points.map(p=>mgAt(p.t)),max=Math.max(50,...vals)*1.12;
  const y=v=>135-v/max*112;
  const coords=points.map((p,i)=>p.x.toFixed(1)+','+y(vals[i]).toFixed(1)).join(' ');
- const area='M '+points[0].x+',135 L '+coords.replaceAll(' ',',')+' L '+points.at(-1).x+',135 Z';
+ const area='M '+points[0].x+',135 '+points.map(p=>'L '+p.x.toFixed(1)+' '+y(mgAt(p.t)).toFixed(1)).join(' ')+' L '+points.at(-1).x+',135 Z';
  const labels=[0,6,12,18,24].map((h,i)=>'<text class="axis" x="'+(34+i*73.5)+'" y="158" text-anchor="middle">'+(new Date(n.getTime()+h*36e5)).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})+'</text>').join('');
  svg.innerHTML='<defs><linearGradient id="fade" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#c6ff58" stop-opacity=".24"/><stop offset="1" stop-color="#c6ff58" stop-opacity="0"/></linearGradient></defs><line class="chartgrid" x1="34" y1="23" x2="328" y2="23"/><line class="chartgrid" x1="34" y1="79" x2="328" y2="79"/><line class="chartgrid" x1="34" y1="135" x2="328" y2="135"/><path class="chartfill" d="'+area+'"/><polyline class="chartline" points="'+coords+'"/><circle cx="34" cy="'+y(vals[0])+'" r="4" fill="#c6ff58"/>'+labels;
 }
