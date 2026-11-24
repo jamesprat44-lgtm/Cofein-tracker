@@ -95,13 +95,31 @@ let scanner=null;
 $('scanBtn').onclick=async()=>{$('scanDialog').showModal();$('scanStatus').textContent='Starting camera…';if(!window.Html5Qrcode){$('scanStatus').textContent='Scanner library could not load. Try again with an internet connection.';return}try{scanner=new Html5Qrcode('reader');await scanner.start({facingMode:'environment'},{fps:10,qrbox:{width:240,height:150},formatsToSupport:[Html5QrcodeSupportedFormats.EAN_13,Html5QrcodeSupportedFormats.EAN_8,Html5QrcodeSupportedFormats.UPC_A,Html5QrcodeSupportedFormats.UPC_E]},onBarcode,()=>{});$('scanStatus').textContent='Scanning… hold the barcode steady.'}catch(e){$('scanStatus').textContent='Could not start camera. Check Safari camera permission and use the HTTPS app link.'}};
 async function onBarcode(code){if(scanner){await scanner.stop();scanner.clear();scanner=null} $('scanStatus').textContent='Looking up product '+code+'…';try{const r=await fetch('https://world.openfoodfacts.org/api/v2/product/'+encodeURIComponent(code)+'.json?fields=product_name,brands,quantity,nutriments');const j=await r.json();if(j.status!==1)throw Error('Product not found');const p=j.product||{},nut=p.nutriments||{};let caffeine=nut.caffeine_100g??nut.caffeine_100ml??nut['caffeine-value'];if(caffeine==null){$('scanStatus').textContent=(p.product_name||'Product found')+' found, but caffeine amount is not listed. Please read the label and add the mg manually.';$('drink').value=p.product_name||p.brands||'Scanned product';$('scanDialog').close();$('addDialog').showModal();return}const amount=Number(caffeine)*(parseFloat(p.quantity)||100)/100;$('scanDialog').close();$('drink').value=p.product_name||p.brands||'Scanned product';$('mg').value=Math.round(amount);$('when').value=localInput(now());$('addDialog').showModal()}catch(e){$('scanStatus').textContent='Could not verify caffeine data for this barcode. Please check the label and add the amount manually.'}}
 
+let ocrWorker=null,ocrWorkerPromise=null;
+async function getOcrWorker(){
+ if(ocrWorker)return ocrWorker;
+ if(!ocrWorkerPromise){
+  ocrWorkerPromise=Tesseract.createWorker('eng',1,{logger:m=>{
+   if(m.status==='loading language traineddata')$('ocrStatus').textContent='Preparing text recognition…';
+   else if(m.status==='recognizing text')$('ocrStatus').textContent='Reading label… '+Math.round((m.progress||0)*100)+'%';
+  }}).then(w=>(ocrWorker=w)).catch(e=>{ocrWorkerPromise=null;throw e});
+ }
+ return ocrWorkerPromise;
+}
 async function processLabelImage(file){
  if(!file)return;
  if(scanner){try{await scanner.stop();scanner.clear()}catch(err){}scanner=null}
- $('ocrStatus').textContent='Reading label… this may take a few seconds.';
+ $('ocrStatus').textContent='Preparing photo…';
  try{
   if(!window.Tesseract)throw Error('Text recognition library did not load');
-  const result=await Tesseract.recognize(file,'eng');
+  const bitmap=await createImageBitmap(file);
+  const scale=Math.min(1,1500/Math.max(bitmap.width,bitmap.height));
+  const canvas=$('labelCanvas');canvas.width=Math.round(bitmap.width*scale);canvas.height=Math.round(bitmap.height*scale);
+  const ctx=canvas.getContext('2d',{willReadFrequently:true});
+  ctx.drawImage(bitmap,0,0,canvas.width,canvas.height);bitmap.close();
+  $('ocrStatus').textContent='Starting text recognition…';
+  const worker=await getOcrWorker();
+  const result=await worker.recognize(canvas);
   const normalized=(result.data.text||'').replace(/\\s+/g,' ').replace(/,/g,'.');
   const patterns=[
    /(?:caffeine|kofe[ií]n)[^.]{0,55}?(\\d+(?:\\.\\d+)?)\\s*mg\\s*(?:\\/|per)\\s*100\\s*ml/i,
