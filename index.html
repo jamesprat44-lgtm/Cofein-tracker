@@ -112,7 +112,21 @@ $('labelPhoto').addEventListener('change',async e=>{
   ];
   let match=null,per100=false;
   for(let i=0;i<patterns.length;i++){match=normalized.match(patterns[i]);if(match){per100=i<2;break}}
-  if(!match){$('ocrStatus').textContent='Could not confidently find a caffeine value. Try a sharper photo or enter the value manually.';return}
+  if(!match){
+   const containsCaffeine=/kofe[ií]n|caffeine/i.test(normalized);
+   if(containsCaffeine){
+    $('scanDialog').close();
+    $('drink').value='Scanned drink (caffeine listed; amount not shown)';
+    $('mg').value='';
+    $('when').value=localInput(now());
+    $('addDialog').showModal();
+    $('notice').textContent='Label confirms caffeine is an ingredient, but does not state its amount in mg. Do not estimate from the ingredient list.';
+    alert('Na etikete sa našiel kofeín v zložení, ale jeho množstvo v mg nie je uvedené. Aplikácia ho preto nemôže bezpečne vypočítať. Zadaj overené množstvo ručne.');
+   }else{
+    $('ocrStatus').textContent='Nenašiel sa údaj o kofeíne. Skús ostrejšiu fotografiu alebo zadaj hodnotu ručne.';
+   }
+   return;
+  }
   const value=Number(match[1]);
   $('scanDialog').close();
   $('drink').value='Scanned label';
