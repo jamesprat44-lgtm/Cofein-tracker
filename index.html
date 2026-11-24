@@ -102,12 +102,12 @@ $('labelPhoto').addEventListener('change',async e=>{
   if(!window.Tesseract)throw Error('Text recognition library did not load');
   const result=await Tesseract.recognize(file,'eng');
   const text=result.data.text||'';
-  const normalized=text.replace(/\\s+/g,' ').replace(/,/g,'.');
+  const normalized=text.replace(/\s+/g,' ').replace(/,/g,'.');
   const patterns=[
-   /caffeine[^.]{0,45}?(\\d+(?:\\.\\d+)?)\\s*mg\\s*(?:\\/|per)\\s*100\\s*ml/i,
-   /(\\d+(?:\\.\\d+)?)\\s*mg\\s*(?:of )?caffeine[^.]{0,25}?(?:\\/|per)\\s*100\\s*ml/i,
-   /caffeine[^.]{0,35}?(\\d+(?:\\.\\d+)?)\\s*mg\\b/i,
-   /(\\d+(?:\\.\\d+)?)\\s*mg[^.]{0,25}?caffeine/i
+   /caffeine[^.]{0,45}?(\d+(?:\.\d+)?)\s*mg\s*(?:\/|per)\s*100\s*ml/i,
+   /(\d+(?:\.\d+)?)\s*mg\s*(?:of )?caffeine[^.]{0,25}?(?:\/|per)\s*100\s*ml/i,
+   /caffeine[^.]{0,35}?(\d+(?:\.\d+)?)\s*mg\b/i,
+   /(\d+(?:\.\d+)?)\s*mg[^.]{0,25}?caffeine/i
   ];
   let match=null,per100=false;
   for(let i=0;i<patterns.length;i++){match=normalized.match(patterns[i]);if(match){per100=i<2;break}}
