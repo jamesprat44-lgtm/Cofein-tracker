@@ -121,7 +121,7 @@ $('labelPhoto').addEventListener('change',async e=>{
   if(per100){
    const volume=prompt('Label says about '+value+' mg caffeine per 100 ml. What is the drink volume in ml? (For example, 500)');
    if(volume&&Number(volume)>0)$('mg').value=Math.round(value*Number(volume)/100);
-   else $('mg').value=value;
+   else {$('mg').value='';alert('Enter the total caffeine amount in mg before saving.');}
   }else{
    $('mg').value=value;
    alert('Detected approximately '+value+' mg caffeine. Please verify this value against the label before saving.');
