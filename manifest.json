@@ -1,0 +1,10 @@
+{
+  "name": "CAFFEINE — Intake Tracker",
+  "short_name": "Caffeine",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#0d100f",
+  "theme_color": "#101311",
+  "description": "Track caffeine intake and estimate how much remains in your body.",
+  "icons": []
+}
