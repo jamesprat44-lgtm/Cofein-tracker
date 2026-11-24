@@ -49,7 +49,7 @@ dialog{width:min( calc(100% - 28px),440px);background:#171d19;color:var(--text);
 <div class="actions"><button class="secondary" id="scanBtn">▦ SCAN PRODUCT</button><button class="primary" id="addBtn">＋ ADD INTAKE</button></div>
 <dialog id="addDialog"><h3>Add caffeine</h3><label>Product / drink</label><input id="drink" placeholder="e.g. Espresso, energy drink"><div class="row2"><div><label>Caffeine (mg)</label><input id="mg" type="number" min="0" max="2000" placeholder="80"></div><div><label>Time consumed</label><input id="when" type="datetime-local"></div></div><div class="dialog-actions"><button class="cancel" data-close="addDialog">Cancel</button><button class="save" id="saveIntake">Add to tracker</button></div></dialog>
 <dialog id="settingsDialog"><h3>Tracker settings</h3><label>Estimated caffeine half-life</label><select id="halfLife"><option value="3">3 hours · fast</option><option value="4">4 hours</option><option value="5" selected>5 hours · average</option><option value="6">6 hours</option><option value="7">7 hours</option><option value="8">8 hours</option></select><label>Bedtime</label><input id="bedtime" type="time" value="23:00"><label>Daily reference amount (mg)</label><input id="dailyLimit" type="number" min="50" max="1000" value="400"><p class="hint">The half-life is an adjustable estimate, not a personal medical measurement. 400 mg is a general reference for many healthy adults, not a target.</p><div class="dialog-actions"><button class="cancel" data-close="settingsDialog">Close</button><button class="save" id="saveSettings">Save settings</button></div></dialog>
-<dialog id="scanDialog"><h3>Scan a product</h3><p class="hint">Point your camera at a product barcode. If the product is found in Open Food Facts, we'll look for its caffeine information. Barcode lookup does not guarantee that caffeine data is listed.</p><div id="reader" style="width:100%;margin-top:15px;border-radius:12px;overflow:hidden"></div><div style="margin-top:14px;padding:13px;background:#202820;border:1px solid #39443b;border-radius:13px"><label for="labelPhoto">Or photograph the ingredients / nutrition label</label><input id="labelPhoto" type="file" accept="image/*" capture="environment"><p class="hint">The app will try to read the label. Check the detected value before saving.</p><div id="ocrStatus" class="status"></div></div><div id="scanStatus" class="status">Camera permission is required. If scanning is unavailable, add the label value manually.</div><div class="dialog-actions"><button class="cancel" data-close="scanDialog">Close</button></div></dialog>
+<dialog id="scanDialog"><h3>Scan a product</h3><p class="hint">Point your camera at a product barcode. If the product is found in Open Food Facts, we'll look for its caffeine information. Barcode lookup does not guarantee that caffeine data is listed.</p><div id="reader" style="width:100%;margin-top:15px;border-radius:12px;overflow:hidden"></div><div style="margin-top:14px;padding:13px;background:#202820;border:1px solid #39443b;border-radius:13px"><label>Photograph ingredients / nutrition label</label><video id="labelCamera" playsinline autoplay muted style="display:none;width:100%;border-radius:12px;background:#080b09;margin-top:8px"></video><canvas id="labelCanvas" style="display:none"></canvas><div class="dialog-actions"><button type="button" class="cancel" id="startLabelCamera">Open camera</button><button type="button" class="save" id="captureLabel" disabled>Take photo</button></div><label for="labelPhoto">Or choose an existing photo</label><input id="labelPhoto" type="file" accept="image/*"><p class="hint">Use good light and keep the caffeine information in focus.</p><div id="ocrStatus" class="status"></div></div><div id="scanStatus" class="status">Camera permission is required. If scanning is unavailable, add the label value manually.</div><div class="dialog-actions"><button class="cancel" data-close="scanDialog">Close</button></div></dialog>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script><script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script>
 const $=id=>document.getElementById(id);
@@ -95,55 +95,59 @@ let scanner=null;
 $('scanBtn').onclick=async()=>{$('scanDialog').showModal();$('scanStatus').textContent='Starting camera…';if(!window.Html5Qrcode){$('scanStatus').textContent='Scanner library could not load. Try again with an internet connection.';return}try{scanner=new Html5Qrcode('reader');await scanner.start({facingMode:'environment'},{fps:10,qrbox:{width:240,height:150},formatsToSupport:[Html5QrcodeSupportedFormats.EAN_13,Html5QrcodeSupportedFormats.EAN_8,Html5QrcodeSupportedFormats.UPC_A,Html5QrcodeSupportedFormats.UPC_E]},onBarcode,()=>{});$('scanStatus').textContent='Scanning… hold the barcode steady.'}catch(e){$('scanStatus').textContent='Could not start camera. Check Safari camera permission and use the HTTPS app link.'}};
 async function onBarcode(code){if(scanner){await scanner.stop();scanner.clear();scanner=null} $('scanStatus').textContent='Looking up product '+code+'…';try{const r=await fetch('https://world.openfoodfacts.org/api/v2/product/'+encodeURIComponent(code)+'.json?fields=product_name,brands,quantity,nutriments');const j=await r.json();if(j.status!==1)throw Error('Product not found');const p=j.product||{},nut=p.nutriments||{};let caffeine=nut.caffeine_100g??nut.caffeine_100ml??nut['caffeine-value'];if(caffeine==null){$('scanStatus').textContent=(p.product_name||'Product found')+' found, but caffeine amount is not listed. Please read the label and add the mg manually.';$('drink').value=p.product_name||p.brands||'Scanned product';$('scanDialog').close();$('addDialog').showModal();return}const amount=Number(caffeine)*(parseFloat(p.quantity)||100)/100;$('scanDialog').close();$('drink').value=p.product_name||p.brands||'Scanned product';$('mg').value=Math.round(amount);$('when').value=localInput(now());$('addDialog').showModal()}catch(e){$('scanStatus').textContent='Could not verify caffeine data for this barcode. Please check the label and add the amount manually.'}}
 
-$('labelPhoto').addEventListener('change',async e=>{
- const file=e.target.files&&e.target.files[0];if(!file)return;
+async function processLabelImage(file){
+ if(!file)return;
  if(scanner){try{await scanner.stop();scanner.clear()}catch(err){}scanner=null}
  $('ocrStatus').textContent='Reading label… this may take a few seconds.';
  try{
   if(!window.Tesseract)throw Error('Text recognition library did not load');
   const result=await Tesseract.recognize(file,'eng');
-  const text=result.data.text||'';
-  const normalized=text.replace(/\s+/g,' ').replace(/,/g,'.');
+  const normalized=(result.data.text||'').replace(/\\s+/g,' ').replace(/,/g,'.');
   const patterns=[
-   /caffeine[^.]{0,45}?(\d+(?:\.\d+)?)\s*mg\s*(?:\/|per)\s*100\s*ml/i,
-   /(\d+(?:\.\d+)?)\s*mg\s*(?:of )?caffeine[^.]{0,25}?(?:\/|per)\s*100\s*ml/i,
-   /caffeine[^.]{0,35}?(\d+(?:\.\d+)?)\s*mg\b/i,
-   /(\d+(?:\.\d+)?)\s*mg[^.]{0,25}?caffeine/i
+   /(?:caffeine|kofe[ií]n)[^.]{0,55}?(\\d+(?:\\.\\d+)?)\\s*mg\\s*(?:\\/|per)\\s*100\\s*ml/i,
+   /(\\d+(?:\\.\\d+)?)\\s*mg\\s*(?:of )?(?:caffeine|kofe[ií]n)[^.]{0,25}?(?:\\/|per)\\s*100\\s*ml/i,
+   /(?:caffeine|kofe[ií]n)[^.]{0,35}?(\\d+(?:\\.\\d+)?)\\s*mg\\b/i,
+   /(\\d+(?:\\.\\d+)?)\\s*mg[^.]{0,25}?(?:caffeine|kofe[ií]n)/i
   ];
   let match=null,per100=false;
   for(let i=0;i<patterns.length;i++){match=normalized.match(patterns[i]);if(match){per100=i<2;break}}
   if(!match){
-   const containsCaffeine=/kofe[ií]n|caffeine/i.test(normalized);
-   if(containsCaffeine){
-    $('scanDialog').close();
-    $('drink').value='Scanned drink (caffeine listed; amount not shown)';
-    $('mg').value='';
-    $('when').value=localInput(now());
-    $('addDialog').showModal();
-    $('notice').textContent='Label confirms caffeine is an ingredient, but does not state its amount in mg. Do not estimate from the ingredient list.';
-    alert('Na etikete sa našiel kofeín v zložení, ale jeho množstvo v mg nie je uvedené. Aplikácia ho preto nemôže bezpečne vypočítať. Zadaj overené množstvo ručne.');
-   }else{
-    $('ocrStatus').textContent='Nenašiel sa údaj o kofeíne. Skús ostrejšiu fotografiu alebo zadaj hodnotu ručne.';
-   }
+   if(/kofe[ií]n|caffeine/i.test(normalized)){
+    $('scanDialog').close();$('drink').value='Scanned drink (caffeine listed; amount not shown)';$('mg').value='';$('when').value=localInput(now());$('addDialog').showModal();
+    alert('Na etikete sa našiel kofeín v zložení, ale jeho množstvo v mg nie je uvedené. Zadaj overené množstvo ručne.');
+   }else $('ocrStatus').textContent='Nepodarilo sa nájsť údaj o kofeíne. Skús ostrejšiu fotografiu.';
    return;
   }
   const value=Number(match[1]);
-  $('scanDialog').close();
-  $('drink').value='Scanned label';
-  $('mg').value=per100?value:'';
-  $('when').value=localInput(now());
-  $('addDialog').showModal();
+  $('scanDialog').close();$('drink').value='Scanned label';$('mg').value=per100?value:'';$('when').value=localInput(now());$('addDialog').showModal();
   if(per100){
    const volume=prompt('Label says about '+value+' mg caffeine per 100 ml. What is the drink volume in ml? (For example, 500)');
    if(volume&&Number(volume)>0)$('mg').value=Math.round(value*Number(volume)/100);
    else {$('mg').value='';alert('Enter the total caffeine amount in mg before saving.');}
-  }else{
-   $('mg').value=value;
-   alert('Detected approximately '+value+' mg caffeine. Please verify this value against the label before saving.');
-  }
- }catch(err){$('ocrStatus').textContent='Could not read the photo. Please try again or enter the label value manually.'}
-});
-$('scanDialog').addEventListener('close',async()=>{if(scanner){try{await scanner.stop();scanner.clear()}catch(e){}scanner=null}});
+  }else{$('mg').value=value;alert('Detected approximately '+value+' mg caffeine. Please verify this value against the label before saving.');}
+ }catch(err){$('ocrStatus').textContent='Could not read the photo. Try again or enter the label value manually.'}
+}
+$('labelPhoto').addEventListener('change',e=>processLabelImage(e.target.files&&e.target.files[0]));
+let labelStream=null;
+$('startLabelCamera').onclick=async()=>{
+ try{
+  if(labelStream)labelStream.getTracks().forEach(t=>t.stop());
+  if(scanner){try{await scanner.stop();scanner.clear()}catch(e){}scanner=null}
+  labelStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
+  $('labelCamera').srcObject=labelStream;$('labelCamera').style.display='block';$('captureLabel').disabled=false;
+  $('ocrStatus').textContent='Camera ready. Frame the label and tap Take photo.';
+ }catch(e){$('ocrStatus').textContent='Camera could not start. Allow Safari camera access and use the HTTPS app link.'}
+};
+$('captureLabel').onclick=async()=>{
+ const video=$('labelCamera');if(!video.videoWidth)return;
+ const canvas=$('labelCanvas');canvas.width=video.videoWidth;canvas.height=video.videoHeight;
+ canvas.getContext('2d').drawImage(video,0,0);
+ const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',.92));
+ if(labelStream){labelStream.getTracks().forEach(t=>t.stop());labelStream=null}
+ video.srcObject=null;video.style.display='none';$('captureLabel').disabled=true;
+ if(blob)await processLabelImage(new File([blob],'caffeine-label.jpg',{type:'image/jpeg'}));
+};
+$('scanDialog').addEventListener('close',async()=>{if(scanner){try{await scanner.stop();scanner.clear()}catch(e){}scanner=null}if(labelStream){labelStream.getTracks().forEach(t=>t.stop());labelStream=null}$('labelCamera').srcObject=null;$('labelCamera').style.display='none';$('captureLabel').disabled=true;});
 render();setInterval(render,30000);
 if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
 </script>
