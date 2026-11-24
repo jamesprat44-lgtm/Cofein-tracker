@@ -97,6 +97,7 @@ async function onBarcode(code){if(scanner){await scanner.stop();scanner.clear();
 
 $('labelPhoto').addEventListener('change',async e=>{
  const file=e.target.files&&e.target.files[0];if(!file)return;
+ if(scanner){try{await scanner.stop();scanner.clear()}catch(err){}scanner=null}
  $('ocrStatus').textContent='Reading label… this may take a few seconds.';
  try{
   if(!window.Tesseract)throw Error('Text recognition library did not load');
