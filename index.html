@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#101311">
+<meta name="description" content="A live caffeine metabolism tracker.">
+<title>CAFFEINE — Intake tracker</title>
+<link rel="manifest" href="manifest.json">
+<style>
+:root{color-scheme:dark;--bg:#0d100f;--panel:#151a17;--panel2:#1b211d;--line:#29312b;--text:#f1f4ef;--muted:#8d998f;--green:#c6ff58;--orange:#ff9b55;--red:#ff6868}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 80% -10%,#243323 0,transparent 38%),var(--bg);color:var(--text);font:15px/1.45 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh}
+.wrap{width:min(100%,760px);margin:auto;padding:env(safe-area-inset-top) 18px calc(100px + env(safe-area-inset-bottom))}
+header{display:flex;align-items:center;justify-content:space-between;padding:22px 2px 24px}.brand{font-size:13px;letter-spacing:.24em;font-weight:800}.brand span{color:var(--green)}.date{font-size:11px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase}
+.eyebrow{font-size:10px;letter-spacing:.19em;color:var(--muted);font-weight:700;text-transform:uppercase}
+.hero{background:linear-gradient(145deg,#1b241d,#121714 68%);border:1px solid #344136;border-radius:25px;padding:23px 21px 20px;position:relative;overflow:hidden;box-shadow:0 18px 55px #0005}
+.hero:after{content:"";position:absolute;width:230px;height:230px;border:1px solid #c6ff5818;border-radius:50%;right:-95px;top:-115px;box-shadow:0 0 0 25px #c6ff5808,0 0 0 52px #c6ff5805;pointer-events:none}
+.hero-top{display:flex;justify-content:space-between;align-items:center}.live{font-size:10px;color:var(--green);letter-spacing:.14em}.live:before{content:"";display:inline-block;width:6px;height:6px;background:var(--green);border-radius:50%;margin:0 8px 1px 0;box-shadow:0 0 10px var(--green)}
+.amount{font-size:clamp(64px,17vw,92px);font-weight:750;letter-spacing:-.075em;line-height:1;margin:22px 0 2px;font-variant-numeric:tabular-nums}.amount small{font-size:19px;letter-spacing:0;color:var(--muted);font-weight:550;margin-left:7px}
+.subline{color:var(--muted);font-size:13px}.meter{height:7px;border-radius:10px;background:#303a32;margin:22px 0 9px;overflow:hidden}.meter>i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--green),#e3ff9b);border-radius:10px;transition:width .4s}.meter-labels{display:flex;justify-content:space-between;color:var(--muted);font-size:10px;letter-spacing:.1em;text-transform:uppercase}
+.hero-bottom{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:24px}.metric{border-top:1px solid #ffffff15;padding-top:13px}.metric strong{display:block;font-size:19px;font-variant-numeric:tabular-nums}.metric span{font-size:10px;color:var(--muted);letter-spacing:.11em;text-transform:uppercase}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-top:13px}.tile{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px}.tile strong{font-size:23px;display:block;margin-top:8px;font-variant-numeric:tabular-nums}.tile p{margin:3px 0 0;color:var(--muted);font-size:11px}
+.section{margin-top:27px}.section-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.section-head h2{font-size:13px;letter-spacing:.12em;margin:0;text-transform:uppercase}.link{border:0;background:none;color:var(--green);font:inherit;font-size:11px}
+.chartbox{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:13px 12px 8px}.chartbox svg{width:100%;height:170px;overflow:visible}.axis{fill:#768078;font-size:9px}.chartline{fill:none;stroke:var(--green);stroke-width:2.7;stroke-linecap:round;stroke-linejoin:round}.chartfill{fill:url(#fade)}.chartgrid{stroke:#303a32;stroke-width:1;stroke-dasharray:3 5}
+.intake{display:flex;align-items:center;gap:12px;padding:13px 2px;border-bottom:1px solid var(--line)}.cup{width:38px;height:38px;border-radius:12px;background:#222b23;display:grid;place-items:center;font-size:18px}.intake-info{flex:1;min-width:0}.intake-info b{display:block;font-size:13px}.intake-info small{color:var(--muted);font-size:11px}.mg{font-weight:700;font-size:14px;font-variant-numeric:tabular-nums}.remove{border:0;background:none;color:#748078;font-size:18px;padding:5px}
+.actions{position:fixed;bottom:0;left:0;right:0;padding:12px 18px calc(12px + env(safe-area-inset-bottom));background:linear-gradient(transparent,#0d100f 22%);display:flex;gap:10px;justify-content:center}.actions button{max-width:370px;flex:1;border:0;border-radius:15px;padding:16px 12px;font-weight:800;letter-spacing:.06em;font-size:12px}.primary{background:var(--green);color:#11170e}.secondary{background:#242c26;color:var(--text);border:1px solid #39443b!important}
+dialog{width:min( calc(100% - 28px),440px);background:#171d19;color:var(--text);border:1px solid #3a463c;border-radius:22px;padding:22px;box-shadow:0 30px 90px #000b}dialog::backdrop{background:#000a;backdrop-filter:blur(5px)}dialog h3{margin:0 0 18px;font-size:18px}label{display:block;color:var(--muted);font-size:10px;letter-spacing:.13em;text-transform:uppercase;margin:13px 0 6px}input,select{width:100%;padding:13px;border:1px solid #364239;background:#0e130f;color:var(--text);border-radius:11px;font:inherit;outline:none}input:focus,select:focus{border-color:var(--green)}.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.dialog-actions{display:flex;gap:9px;margin-top:20px}.dialog-actions button{flex:1;border:0;border-radius:11px;padding:13px;font-weight:750}.cancel{background:#29312b;color:var(--text)}.save{background:var(--green);color:#11170e}.hint{font-size:11px;color:var(--muted);margin:12px 0 0}.empty{color:var(--muted);font-size:12px;padding:20px 0}.status{font-size:11px;color:var(--muted);margin-top:10px;min-height:18px}
+@media(min-width:600px){.wrap{padding-left:26px;padding-right:26px}.hero{padding:28px}.grid{gap:14px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><div class="brand">CAF<span>•</span>FEINE</div><div class="date" id="today"></div></header>
+<section class="hero">
+ <div class="hero-top"><span class="eyebrow">Estimated in your body</span><span class="live">LIVE MODEL</span></div>
+ <div class="amount" id="current">0<small>mg</small></div>
+ <div class="subline" id="level">No caffeine logged yet</div>
+ <div class="meter"><i id="meter"></i></div><div class="meter-labels"><span>0 mg</span><span id="maxLabel">Daily reference · 400 mg</span></div>
+ <div class="hero-bottom"><div class="metric"><strong id="clearTime">—</strong><span>Below 10 mg at</span></div><div class="metric"><strong id="halfTime">5h</strong><span>Assumed half-life</span></div></div>
+</section>
+<div class="grid">
+ <div class="tile"><span class="eyebrow">Consumed today</span><strong id="total">0 mg</strong><p>Across all logged servings</p></div>
+ <div class="tile"><span class="eyebrow">Next sleep</span><strong id="sleepEstimate">—</strong><p id="sleepCaption">Set your bedtime below</p></div>
+</div>
+<section class="section"><div class="section-head"><h2>Metabolism curve</h2><span class="eyebrow">Next 24 hours</span></div><div class="chartbox"><svg id="chart" viewBox="0 0 340 170" role="img" aria-label="Estimated caffeine decay chart"></svg></div></section>
+<section class="section"><div class="section-head"><h2>Today's intake</h2><button class="link" id="settingsBtn">SETTINGS ⚙</button></div><div id="intakes"></div></section>
+<div class="status" id="notice">Estimates only · individual caffeine metabolism varies.</div>
+</div>
+<div class="actions"><button class="secondary" id="scanBtn">▦ SCAN PRODUCT</button><button class="primary" id="addBtn">＋ ADD INTAKE</button></div>
+<dialog id="addDialog"><h3>Add caffeine</h3><label>Product / drink</label><input id="drink" placeholder="e.g. Espresso, energy drink"><div class="row2"><div><label>Caffeine (mg)</label><input id="mg" type="number" min="0" max="2000" placeholder="80"></div><div><label>Time consumed</label><input id="when" type="datetime-local"></div></div><div class="dialog-actions"><button class="cancel" data-close="addDialog">Cancel</button><button class="save" id="saveIntake">Add to tracker</button></div></dialog>
+<dialog id="settingsDialog"><h3>Tracker settings</h3><label>Estimated caffeine half-life</label><select id="halfLife"><option value="3">3 hours · fast</option><option value="4">4 hours</option><option value="5" selected>5 hours · average</option><option value="6">6 hours</option><option value="7">7 hours</option><option value="8">8 hours</option></select><label>Bedtime</label><input id="bedtime" type="time" value="23:00"><label>Daily reference amount (mg)</label><input id="dailyLimit" type="number" min="50" max="1000" value="400"><p class="hint">The half-life is an adjustable estimate, not a personal medical measurement. 400 mg is a general reference for many healthy adults, not a target.</p><div class="dialog-actions"><button class="cancel" data-close="settingsDialog">Close</button><button class="save" id="saveSettings">Save settings</button></div></dialog>
+<dialog id="scanDialog"><h3>Scan a product</h3><p class="hint">Point your camera at a product barcode. If the product is found in Open Food Facts, we'll look for its caffeine information. Barcode lookup does not guarantee that caffeine data is listed.</p><div id="reader" style="width:100%;margin-top:15px;border-radius:12px;overflow:hidden"></div><div id="scanStatus" class="status">Camera permission is required. If scanning is unavailable, add the label value manually.</div><div class="dialog-actions"><button class="cancel" data-close="scanDialog">Close</button></div></dialog>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+const KEY='caffeine-tracker-v1';
+let state=JSON.parse(localStorage.getItem(KEY)||'null')||{items:[],halfLife:5,bedtime:'23:00',dailyLimit:400};
+const now=()=>new Date();
+const localInput=d=>{const x=new Date(d.getTime()-d.getTimezoneOffset()*60000);return x.toISOString().slice(0,16)};
+const save=()=>localStorage.setItem(KEY,JSON.stringify(state));
+const fmtTime=d=>d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+const mgAt=t=>state.items.reduce((s,x)=>s+x.mg*Math.pow(.5,Math.max(0,(t-new Date(x.time))/36e5)/state.halfLife),0);
+function render(){
+ const n=now(),today=n.toDateString(),todayItems=state.items.filter(x=>new Date(x.time).toDateString()===today);
+ const current=mgAt(n),total=todayItems.reduce((s,x)=>s+x.mg,0);
+ $('today').textContent=n.toLocaleDateString([], {weekday:'short',month:'short',day:'numeric'});
+ $('current').innerHTML=Math.round(current)+'<small>mg</small>';
+ const level=current<30?'LOW':current<100?'MODERATE':current<200?'ELEVATED': 'HIGH';
+ $('level').textContent=current<1?'No caffeine currently estimated':level+' · estimated remaining caffeine';
+ $('meter').style.width=Math.min(100,current/state.dailyLimit*100)+'%';$('maxLabel').textContent='Daily reference · '+state.dailyLimit+' mg';
+ $('total').textContent=Math.round(total)+' mg';$('halfTime').textContent=state.halfLife+'h';
+ let clear=new Date(n); if(current>=10){clear=new Date(n.getTime()+state.halfLife*3600000*Math.log2(current/10));$('clearTime').textContent=fmtTime(clear)+' · '+clear.toLocaleDateString([], {month:'short',day:'numeric'});}else $('clearTime').textContent='Already below 10';
+ const [hh,mm]=state.bedtime.split(':').map(Number);let bed=new Date(n);bed.setHours(hh,mm,0,0);if(bed<=n)bed.setDate(bed.getDate()+1);
+ $('sleepEstimate').textContent=Math.round(mgAt(bed))+' mg';$('sleepCaption').textContent='Estimated at '+state.bedtime;
+ $('intakes').innerHTML=todayItems.length?todayItems.sort((a,b)=>new Date(b.time)-new Date(a.time)).map(x=>'<div class="intake"><div class="cup">☕</div><div class="intake-info"><b>'+esc(x.name)+'</b><small>'+fmtTime(new Date(x.time))+'</small></div><div class="mg">'+x.mg+' mg</div><button class="remove" data-remove="'+x.id+'" aria-label="Delete intake">×</button></div>').join():'<div class="empty">Nothing logged today. Add your first drink to start the curve.</div>';
+ drawChart();save();
+}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function drawChart(){
+ const svg=$('chart'),n=now(),points=Array.from({length:49},(_,i)=>({t:new Date(n.getTime()+i*30*60000),x:34+i*(294/48)}));
+ const vals=points.map(p=>mgAt(p.t)),max=Math.max(50,...vals)*1.12;
+ const y=v=>135-v/max*112;
+ const coords=points.map((p,i)=>p.x.toFixed(1)+','+y(vals[i]).toFixed(1)).join(' ');
+ const area='M '+points[0].x+',135 L '+coords.replaceAll(' ',',')+' L '+points.at(-1).x+',135 Z';
+ const labels=[0,6,12,18,24].map((h,i)=>'<text class="axis" x="'+(34+i*73.5)+'" y="158" text-anchor="middle">'+(new Date(n.getTime()+h*36e5)).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})+'</text>').join('');
+ svg.innerHTML='<defs><linearGradient id="fade" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#c6ff58" stop-opacity=".24"/><stop offset="1" stop-color="#c6ff58" stop-opacity="0"/></linearGradient></defs><line class="chartgrid" x1="34" y1="23" x2="328" y2="23"/><line class="chartgrid" x1="34" y1="79" x2="328" y2="79"/><line class="chartgrid" x1="34" y1="135" x2="328" y2="135"/><path class="chartfill" d="'+area+'"/><polyline class="chartline" points="'+coords+'"/><circle cx="34" cy="'+y(vals[0])+'" r="4" fill="#c6ff58"/>'+labels;
+}
+$('addBtn').onclick=()=>{$('when').value=localInput(now());$('addDialog').showModal()};
+$('saveIntake').onclick=()=>{const mg=Number($('mg').value);if(!mg||mg<0||mg>2000){$('mg').focus();return}state.items.push({id:crypto.randomUUID(),name:$('drink').value.trim()||'Caffeine',mg,time:new Date($('when').value).toISOString()});$('addDialog').close();$('drink').value='';$('mg').value='';render()};
+$('settingsBtn').onclick=()=>{$('halfLife').value=state.halfLife;$('bedtime').value=state.bedtime;$('dailyLimit').value=state.dailyLimit;$('settingsDialog').showModal()};
+$('saveSettings').onclick=()=>{state.halfLife=Number($('halfLife').value);state.bedtime=$('bedtime').value;state.dailyLimit=Math.max(50,Number($('dailyLimit').value)||400);$('settingsDialog').close();render()};
+document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>$(b.dataset.close).close());
+$('intakes').addEventListener('click',e=>{const b=e.target.closest('[data-remove]');if(b){state.items=state.items.filter(x=>x.id!==b.dataset.remove);render()}});
+let scanner=null;
+$('scanBtn').onclick=async()=>{$('scanDialog').showModal();$('scanStatus').textContent='Starting camera…';if(!window.Html5Qrcode){$('scanStatus').textContent='Scanner library could not load. Try again with an internet connection.';return}try{scanner=new Html5Qrcode('reader');await scanner.start({facingMode:'environment'},{fps:10,qrbox:{width:240,height:150},formatsToSupport:[Html5QrcodeSupportedFormats.EAN_13,Html5QrcodeSupportedFormats.EAN_8,Html5QrcodeSupportedFormats.UPC_A,Html5QrcodeSupportedFormats.UPC_E]},onBarcode,()=>{});$('scanStatus').textContent='Scanning… hold the barcode steady.'}catch(e){$('scanStatus').textContent='Could not start camera. Check Safari camera permission and use the HTTPS app link.'}};
+async function onBarcode(code){if(scanner){await scanner.stop();scanner.clear();scanner=null} $('scanStatus').textContent='Looking up product '+code+'…';try{const r=await fetch('https://world.openfoodfacts.org/api/v2/product/'+encodeURIComponent(code)+'.json?fields=product_name,brands,quantity,nutriments');const j=await r.json();if(j.status!==1)throw Error('Product not found');const p=j.product||{},nut=p.nutriments||{};let caffeine=nut.caffeine_100g??nut.caffeine_100ml??nut['caffeine-value'];if(caffeine==null){$('scanStatus').textContent=(p.product_name||'Product found')+' found, but caffeine amount is not listed. Please read the label and add the mg manually.';$('drink').value=p.product_name||p.brands||'Scanned product';$('scanDialog').close();$('addDialog').showModal();return}const amount=Number(caffeine)*(parseFloat(p.quantity)||100)/100;$('scanDialog').close();$('drink').value=p.product_name||p.brands||'Scanned product';$('mg').value=Math.round(amount);$('when').value=localInput(now());$('addDialog').showModal()}catch(e){$('scanStatus').textContent='Could not verify caffeine data for this barcode. Please check the label and add the amount manually.'}}
+$('scanDialog').addEventListener('close',async()=>{if(scanner){try{await scanner.stop();scanner.clear()}catch(e){}scanner=null}});
+render();setInterval(render,30000);
+if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+</script>
+</body></html>
