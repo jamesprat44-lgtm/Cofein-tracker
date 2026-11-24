@@ -120,12 +120,12 @@ async function processLabelImage(file){
   $('ocrStatus').textContent='Starting text recognition…';
   const worker=await getOcrWorker();
   const result=await worker.recognize(canvas);
-  const normalized=(result.data.text||'').replace(/\\s+/g,' ').replace(/,/g,'.');
+  const normalized=(result.data.text||'').replace(/\s+/g,' ').replace(/,/g,'.');
   const patterns=[
-   /(?:caffeine|kofe[ií]n)[^.]{0,55}?(\\d+(?:\\.\\d+)?)\\s*mg\\s*(?:\\/|per)\\s*100\\s*ml/i,
-   /(\\d+(?:\\.\\d+)?)\\s*mg\\s*(?:of )?(?:caffeine|kofe[ií]n)[^.]{0,25}?(?:\\/|per)\\s*100\\s*ml/i,
-   /(?:caffeine|kofe[ií]n)[^.]{0,35}?(\\d+(?:\\.\\d+)?)\\s*mg\\b/i,
-   /(\\d+(?:\\.\\d+)?)\\s*mg[^.]{0,25}?(?:caffeine|kofe[ií]n)/i
+   /(?:caffeine|kofe[ií]n)[^.]{0,55}?(\d+(?:\.\d+)?)\s*mg\s*(?:\/|per)\s*100\s*ml/i,
+   /(\d+(?:\.\d+)?)\s*mg\s*(?:of )?(?:caffeine|kofe[ií]n)[^.]{0,25}?(?:\/|per)\s*100\s*ml/i,
+   /(?:caffeine|kofe[ií]n)[^.]{0,35}?(\d+(?:\.\d+)?)\s*mg\b/i,
+   /(\d+(?:\.\d+)?)\s*mg[^.]{0,25}?(?:caffeine|kofe[ií]n)/i
   ];
   let match=null,per100=false;
   for(let i=0;i<patterns.length;i++){match=normalized.match(patterns[i]);if(match){per100=i<2;break}}
